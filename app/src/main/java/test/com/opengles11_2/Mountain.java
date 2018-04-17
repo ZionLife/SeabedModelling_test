@@ -5,12 +5,13 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import android.opengl.GLES30;
+import android.opengl.GLSurfaceView;
 import android.util.Log;
 
 
 import test.com.opengles11_2.ShaderUtil;
 
-public class Mountion {
+public class Mountain {
     //单位长度
     float UNIT_SIZE = 3.0f;
 
@@ -38,7 +39,7 @@ public class Mountion {
     //顶点数量
     int vCount = 0;
 
-    public Mountion(MySurfaceView mv, float[][] yArray, int rows, int cols) {
+    public Mountain(GLSurfaceView mv, float[][] yArray, int rows, int cols) {
         initVertexData(yArray, rows, cols);
         initShader(mv);
     }
@@ -101,7 +102,7 @@ public class Mountion {
     }
 
     //初始化着色器的方法
-    public void initShader(MySurfaceView mv) {
+    public void initShader(GLSurfaceView mv) {
         String mVertexShader = ShaderUtil.readTextFileFromResource(MyApplication.mContext, R.raw.vertex);
         String mFragmentShader = ShaderUtil.readTextFileFromResource(MyApplication.mContext, R.raw.frag);
 //        String mVertexShader = ShaderUtil.loadFromAssetsFile("vertex.sh", mv.getResources());
@@ -127,7 +128,53 @@ public class Mountion {
     }
 
     public void drawSelf(int texId, int rock_textId) {
-        Log.i("Mountion", "drawSelf");
+        Log.i("Mountain", "drawSelf");
+        //指定使用某套着色器程序
+        GLES30.glUseProgram(mProgram);
+        //将最终变换矩阵传入渲染管线
+        GLES30.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, MatrixState.getFinalMatrix(), 0);
+        //将顶点位置数据送入渲染管线
+        GLES30.glVertexAttribPointer
+                (
+                        maPositionHandle,
+                        3,
+                        GLES30.GL_FLOAT,
+                        false,
+                        3 * 4,
+                        mVertexBuffer
+                );
+        //将纹理坐标数据传入渲染管线
+        GLES30.glVertexAttribPointer
+                (
+                        maTexCoorHandle,
+                        2,
+                        GLES30.GL_FLOAT,
+                        false,
+                        2 * 4,
+                        mTexCoorBuffer
+                );
+        //启用顶点位置数据数组
+        GLES30.glEnableVertexAttribArray(maPositionHandle);
+        //启用纹理坐标数据数组
+        GLES30.glEnableVertexAttribArray(maTexCoorHandle);
+
+        //绑定纹理
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texId);
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE1);
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, rock_textId);
+        GLES30.glUniform1i(sTextureGrassHandle, 0);//使用0号纹理
+        GLES30.glUniform1i(sTextureRockHandle, 1); //使用1号纹理
+
+        GLES30.glUniform1f(landStartYYHandle, 0);
+        GLES30.glUniform1f(landYSpanHandle, 10);
+
+        //绘制纹理矩形
+        GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, vCount);
+    }
+
+    public void drawSelf(int texId, int rock_textId, int width) { //width为障碍物的边长
+        Log.i("Mountain", "drawSelf");
         //指定使用某套着色器程序
         GLES30.glUseProgram(mProgram);
         //将最终变换矩阵传入渲染管线
